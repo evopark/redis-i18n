@@ -2,6 +2,7 @@ require 'redis-store'
 
 module I18n
   module Backend
+    # Redis-Backend for I18n, stores translations values as JSON in Redis
     class Redis
       include Flatten
       include Base
@@ -67,7 +68,11 @@ module I18n
 
         main_key = "#{locale}.#{key}"
         if (result = @store.get(main_key))
-          return JSON.parse(result)
+          begin
+            return JSON.parse(result)
+          rescue JSON::ParserError
+            result
+          end
         end
 
         child_keys = @store.keys("#{main_key}.*")
