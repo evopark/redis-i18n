@@ -62,17 +62,13 @@ module I18n
 
       protected
 
-      # rubocop:disable Metrics/MethodLength
+      # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
       def lookup(locale, key, scope = [], options = {})
         key = normalize_flat_keys(locale, key, scope, options[:separator])
 
         main_key = "#{locale}.#{key}"
         if (result = @store.get(main_key))
-          begin
-            return JSON.parse(result)
-          rescue JSON::ParserError
-            result
-          end
+          return parse_or_rescue_json(result)
         end
 
         child_keys = @store.keys("#{main_key}.*")
@@ -82,15 +78,21 @@ module I18n
         subkey_part = (main_key.size + 1)..-1
         child_keys.each do |child_key|
           subkey         = child_key[subkey_part].to_sym
-          result[subkey] = @store.get child_key
+          result[subkey] = parse_or_rescue_json(@store.get(child_key))
         end
 
         result
       end
-      # rubocop:enable Metrics/MethodLength
+      # rubocop:enable Metrics/AbcSize,Metrics/MethodLength
 
       def resolve_link(_locale, key)
         key
+      end
+
+      def parse_or_rescue_json(value)
+        JSON.parse(value)
+      rescue JSON::ParserError
+        value
       end
     end
   end
